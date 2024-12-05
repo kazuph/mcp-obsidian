@@ -16,12 +16,24 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 // Maximum number of search results to return
 const SEARCH_LIMIT = 200;
 
-// Command line argument parsing
-const args = process.argv.slice(2);
-if (args.length === 0) {
-	console.error("Usage: mcp-obsidian <vault-directory>");
+interface Config {
+	obsidianVaultPath: string;
+}
+
+// Configuration from environment variables
+const config: Config = {
+	obsidianVaultPath: process.env.OBSIDIAN_VAULT_PATH || "",
+};
+
+if (!config.obsidianVaultPath) {
+	console.error("Error: OBSIDIAN_VAULT_PATH environment variable is required");
 	process.exit(1);
 }
+
+// Store allowed directories in normalized form
+const vaultDirectories = [
+	normalizePath(path.resolve(expandHome(config.obsidianVaultPath))),
+];
 
 // Normalize all paths consistently
 function normalizePath(p: string): string {
@@ -35,12 +47,9 @@ function expandHome(filepath: string): string {
 	return filepath;
 }
 
-// Store allowed directories in normalized form
-const vaultDirectories = [normalizePath(path.resolve(expandHome(args[0])))];
-
 // Validate that all directories exist and are accessible
 await Promise.all(
-	args.map(async (dir) => {
+	vaultDirectories.map(async (dir) => {
 		try {
 			const stats = await fs.stat(dir);
 			if (!stats.isDirectory()) {
@@ -197,42 +206,43 @@ async function searchNotes(query: string): Promise<string[]> {
 
 // Tool handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => {
-	return {
-		tools: [
-			{
-				name: "obsidian_read_notes",
-				description:
-					"Read the contents of multiple notes. Each note's content is returned with its " +
-					"path as a reference. Failed reads for individual notes won't stop " +
-					"the entire operation. Reading too many at once may result in an error.",
-				inputSchema: zodToJsonSchema(ReadNotesArgsSchema) as ToolInput,
-			},
-			{
-				name: "obsidian_search_notes",
-				description:
-					"Searches for a note by its name. The search " +
-					"is case-insensitive and matches partial names. " +
-					"Queries can also be a valid regex. Returns paths of the notes " +
-					"that match the query.",
-				inputSchema: zodToJsonSchema(SearchNotesArgsSchema) as ToolInput,
-			},
-			{
-				name: "obsidian_read_notes_dir",
-				description:
-					"Lists only the directory structure under the specified path. " +
-					"Returns the relative paths of all directories without file contents.",
-				inputSchema: zodToJsonSchema(ReadNotesDirArgsSchema) as ToolInput,
-			},
-			{
-				name: "obsidian_write_note",
-				description:
-					"Creates a new note at the specified path. If the target directory " +
-					"is unclear, the operation will be paused and the user will be prompted " +
-					"to specify the correct directory.",
-				inputSchema: zodToJsonSchema(WriteNoteArgsSchema) as ToolInput,
-			},
-		],
-	};
+	const tools = [
+		{
+			name: "obsidian_read_notes",
+			description:
+				"Read the contents of multiple notes. Each note's content is returned with its " +
+				"path as a reference. Failed reads for individual notes won't stop " +
+				"the entire operation. Reading too many at once may result in an error.",
+			inputSchema: zodToJsonSchema(ReadNotesArgsSchema) as ToolInput,
+		},
+		{
+			name: "obsidian_search_notes",
+			description:
+				"Searches for a note by its name. The search " +
+				"is case-insensitive and matches partial names. " +
+				"Queries can also be a valid regex. Returns paths of the notes " +
+				"that match the query.",
+			inputSchema: zodToJsonSchema(SearchNotesArgsSchema) as ToolInput,
+		},
+		{
+			name: "obsidian_read_notes_dir",
+			description:
+				"Lists only the directory structure under the specified path. " +
+				"Returns the relative paths of all directories without file contents.",
+			inputSchema: zodToJsonSchema(ReadNotesDirArgsSchema) as ToolInput,
+		},
+		{
+			name: "obsidian_write_note",
+			description:
+				"Creates a new note at the specified path. Before writing, " +
+				"check the directory structure using obsidian_read_notes_dir. " +
+				"If the target directory is unclear, the operation will be paused " +
+				"and you will be prompted to specify the correct directory.",
+			inputSchema: zodToJsonSchema(WriteNoteArgsSchema) as ToolInput,
+		},
+	];
+
+	return { tools };
 });
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -356,7 +366,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 						content: [
 							{
 								type: "text",
-								text: `書き込み先のディレクトリを指定してください。以下のディレクトリが利用可能です：\n${vaultDirectories.join(
+								text: `Please specify the target directory. Available directories:\n${vaultDirectories.join(
 									"\n",
 								)}`,
 							},
