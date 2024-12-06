@@ -2,9 +2,46 @@
 
 Model Context Protocol server for Obsidian vault integration. This allows Claude Desktop (or any MCP client) to search and read your Obsidian notes.
 
-## Prerequisites
+## Quick Start (For Users)
 
-- Node.js 18+
+### Prerequisites
+- Node.js 18+ (install via `brew install node`)
+- Obsidian vault
+- Claude Desktop (install from https://claude.ai/desktop)
+
+### Configuration
+
+1. Open your Claude Desktop configuration file at:
+`~/Library/Application Support/Claude/claude_desktop_config.json`
+
+You can find this through the Claude Desktop menu:
+1. Open Claude Desktop
+2. Click Claude on the Mac menu bar
+3. Click "Settings"
+4. Click "Developer"
+
+2. Add the following to your configuration:
+
+```json
+{
+  "tools": {
+    "obsidian": {
+      "command": "npx",
+      "args": ["-y", "@kazuph/mcp-obsidian"],
+      "env": {
+        "OBSIDIAN_VAULT_PATH": "/path/to/your/obsidian/vault"
+      }
+    }
+  }
+}
+```
+
+Note: Replace `/path/to/your/obsidian/vault` with your actual Obsidian vault path.
+
+## For Developers
+
+### Prerequisites
+- Node.js 18+ (install via `brew install node`)
 - Obsidian vault
 - Claude Desktop (install from https://claude.ai/desktop)
 - tsx (install via `npm install -g tsx`)
