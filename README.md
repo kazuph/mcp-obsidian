@@ -2,6 +2,8 @@
 
 Model Context Protocol server for Obsidian vault integration. This allows Claude Desktop (or any MCP client) to search and read your Obsidian notes.
 
+<a href="https://glama.ai/mcp/servers/sed8z2tqq9"><img width="380" height="200" src="https://glama.ai/mcp/servers/sed8z2tqq9/badge" alt="@kazuph/mcp-obsidian MCP server" /></a>
+
 ## Quick Start (For Users)
 
 ### Prerequisites
